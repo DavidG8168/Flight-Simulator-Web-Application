@@ -1,0 +1,46 @@
+﻿@{
+        ViewBag.Title = "display";
+    }
+<html>
+<!-- Style the page.-->
+<body style="background-color:black;">
+    <p style="color:white;font-size:50px;"> Writing the route of the plane, please do not change address for 10 seconds for completion... </p>
+    <p style="color:white;font-size:35px;"> The current latitude of the plane is: </p>
+    <p style="color:white;font-size:30px;" type="text" id="latitude" size="5"></p>
+    <p style="color:white;font-size:35px;"> The current longitude of the plane is: </p>
+    <p style="color:white;font-size:30px;" type="text" id="longitude" size="5"></p>
+    <style>
+        img {
+            max-width: 100%;
+            max-height: 50%;
+        }
+    </style>
+    <!-- Set the image source to the given map image. -->
+    <img src="~/Images/export-map-share.png" />
+</body>
+</html>
+
+
+<script>
+    $.post("@Url.Action("CreateFile")");
+    var timer = @Session["time"] * 65
+    var stopTimer = @Session["timeout"] * 1000
+    function savePlaneRoute() {
+        if (stopTimer <= 0) {
+            clearInterval(intervalTimer);
+            $.post("@Url.Action("CloseFile")");
+        }
+        $.post("@Url.Action("ReadFromServer")").done(function (xml) {
+            var xmlDoc = $.parseXML(xml),
+                $xml = $(xmlDoc),
+                PlaneLat = $xml.find("Lat").text();
+            PlaneLon = $xml.find("Lon").text();
+            $("#latitude").text(PlaneLat);
+            $("#longitude").text(PlaneLon);
+            $.post("@Url.Action("WriteFile")");
+        });
+        stopTimer -= timer;
+    }
+    var intervalTimer = setInterval(savePlaneRoute, timer);
+    savePlaneRoute();
+</script>

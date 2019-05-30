@@ -1,0 +1,129 @@
+﻿@{
+        ViewBag.Title = "display";
+    }
+<html>
+<body style="background-color:black;">
+    <p style="color:white;font-size:15px;">
+        <b>
+            If no markers appear, please refresh the page (Ctrl+R)....
+        </b>
+    </p>
+    <!-- Set the size of the image to fill the entire page. -->
+    <style>
+        img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+    </style>
+    <!-- Create the canvas and image from the provided map image in the Images folder. -->
+    <canvas id='c' style='position:absolute; left:0px; top:0px;'></canvas>
+    <!-- Get the image from the source in the Image folder. -->
+    <img src="~/Images/export-map-share.png" img id='imageID' />
+    <p style="color:white;font-size:30px;" type="text" id="networkLat" size="5"></p>
+</body>
+</html>
+
+<script>
+    // Get the image by ID and it's height and width.
+    var img = document.getElementById('imageID');
+    var imageWidth = img.clientWidth;
+    var imageHeight = img.clientHeight;
+    // Get the canvas by ID and it's context.
+    var canvas = document.getElementById("c");
+    var ctx = canvas.getContext("2d");
+    // Create a custom canvas and place the image inside of it.
+    // Then draw a circle to show where the plane is located based on information from the server.
+    (function () {
+        var
+            // Obtain a reference to the canvas element using its id.
+            htmlCanvas = document.getElementById('c'),
+            // Obtain a graphics context on the canvas element for drawing.
+            context = htmlCanvas.getContext('2d');
+            // Start listening to resize events and draw canvas.
+            initialize();
+        function initialize() {
+            // Register an event listener to call the resizeCanvas() function
+            // each time the window is resized.
+            window.addEventListener('resize', resizeCanvas, false);
+            // Draw canvas border for the first time.
+            resizeCanvas();
+        }
+        // Display custom canvas.
+        // border that resizes along with the browser window.
+        function redraw() {
+            context.strokeStyle = 'white';
+            context.lineWidth = '0';
+            //context.strokeRect(0, 0, imageWidth, imageHeight);
+        }
+        // Runs each time the DOM window resize event fires.
+        // Resets the canvas dimensions to match window,
+        // then draws the new borders accordingly.
+        function resizeCanvas() {
+            htmlCanvas.width = imageWidth;
+            htmlCanvas.height = imageHeight;
+            redraw();
+        }
+    })();
+    var IntervalTime = @Session["time"] * 1000
+    var readFromFile = @Session["fromFile"]
+    // If we need to read from the file.
+        if (readFromFile === 1) {
+         $.post("@Url.Action("ReadFromFile")");
+         showPlane = (function () {
+        // Get the numbers from the ServerConnection class.
+        $.post("@Url.Action("ReadFromServer")").done(function (xml) {
+            var xmlDoc = $.parseXML(xml),
+                $xml = $(xmlDoc),
+            PlaneLat = $xml.find("Lat").text();
+            PlaneLon = $xml.find("Lon").text();
+            // If this is the first point, display the location of the plane on the map.
+            if (typeof showPlane.prevlat == "undefined" || typeof showPlane.prevlon == "undefined") {
+                // Draw the circle.
+                ctx.beginPath();
+                ctx.fillStyle = "red"
+                ctx.arc(PlaneLat, PlaneLon, 10, 0, 2 * Math.PI, false);
+                ctx.fill();
+                ctx.stroke();
+            }
+            // Otherwise, we will draw a line to the next point, creating an animation of the route the plane takes.
+            else {
+                // Draw the line between the current point and the previous point.
+                ctx.strokeStyle = "red"
+                ctx.beginPath();
+                ctx.moveTo(showPlane.prevlat, showPlane.prevlon);
+                ctx.lineTo(PlaneLat, PlaneLon);
+                ctx.stroke();
+            }
+            // Set the previous points to the current points and continue.
+            showPlane.prevlat = PlaneLat;
+            showPlane.prevlon = PlaneLon;
+        });
+    });
+    setInterval(showPlane, IntervalTime);
+    showPlane();
+    }
+    // If we need to read from the server.
+        if (readFromFile === 0) {
+        showPlane = (function () {
+            if (typeof PlaneLat == "undefined" || typeof PlaneLon == "undefined") {
+                // Get the Lon and Lat numbers from the ServerConnection class.
+                $.post("@Url.Action("ReadFromServer")").done(function (xml) {
+                    var xmlDoc = $.parseXML(xml),
+                        $xml = $(xmlDoc),
+                        PlaneLat = $xml.find("Lat").text();
+                    PlaneLon = $xml.find("Lon").text();
+                    // Draw the circle.
+                    ctx.beginPath();
+                    ctx.fillStyle = "red"
+                    ctx.arc(PlaneLat, PlaneLon, 10, 0, 2 * Math.PI, false);
+                    ctx.fill();
+                    ctx.stroke();
+                });
+            }
+        });
+        setInterval(showPlane, IntervalTime);
+        showPlane();
+    }
+</script>
+
+
